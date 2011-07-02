@@ -40,8 +40,11 @@ class RevisionGraphModule(Component):
             repos = data['repos']
             info = data['items']
             
-            if str(type(repos)).find('Git'):
+            try:
+                repos.parent_revs
                 has_linear_changesets = False
+            except AttributeError:
+                has_linear_changesets = True
             
             if mode != 'path_history' and revranges is None:
                  show_graph = path == '/' and not verbose \
