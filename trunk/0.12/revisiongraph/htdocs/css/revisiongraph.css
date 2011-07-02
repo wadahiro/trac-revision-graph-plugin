@@ -1,0 +1,6 @@
+/* Log */
+table.trac-graph tbody tr { height: 2em; } 
+table.trac-graph tbody tr td.trac-graph { padding: 0; background-color: #fcfcfc; } 
+table.trac-graph th.trac-graph, table.trac-graph td.trac-graph { display: none; } 
+table.trac-graph td.summary { white-space: nowrap; }
+
