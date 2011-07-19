@@ -39,6 +39,9 @@ class RevisionGraphModule(Component):
             verbose = data['verbose']
             repos = data['repos']
             info = data['items']
+            changes = data['changes']
+            
+            add_stylesheet(req, 'revisiongraph/css/revisiongraph.css')
             
             try:
                 repos.parent_revs
@@ -54,8 +57,11 @@ class RevisionGraphModule(Component):
                filters = self._make_graph(req, repos, info)
                for filter in filters:
                    stream = stream | filter
-               return stream
-            
+                   
+            filters = self._show_branches_tags(req, info, changes)
+            for filter in filters:
+               stream = stream | filter
+                
         return stream
     
     def _make_graph(self, req, repos, info):
@@ -66,7 +72,6 @@ class RevisionGraphModule(Component):
         graph.update(threads=threads, vertices=vertices, columns=columns,
                      colors=self.graph_colors,
                      line_width=0.04, dot_radius=0.1)
-        add_stylesheet(req, 'revisiongraph/css/revisiongraph.css')
         add_script(req, 'revisiongraph/js/excanvas.js')
         add_script(req, 'revisiongraph/js/log_graph.js')
         add_script_data(req, {'graph': graph})
@@ -85,7 +90,6 @@ class RevisionGraphModule(Component):
         });
         """ % (graph['columns'] * 2, len(info) * 2) + Markup("//]]>")
         
-        
         th = tag.th('Graph', class_='trac-graph')
         td = tag.td(class_='trac-graph', rowspan='%d' % len(info))
         
@@ -96,4 +100,22 @@ class RevisionGraphModule(Component):
         
         return [script_filter, table_filter, th_filter, td_filter]
 
-        
+    def _show_branches_tags(self, req, info, changes):
+        filters = []
+        for idx, item in enumerate(info):
+            change = changes[item['rev']]
+            branch_filter = Transformer('//table/tbody/tr[%d]/td[@class="summary"]' % (idx+1))
+            
+            for name, head in change.get_branches():
+                #if branch not in ('default', 'master'):
+                
+                span = tag.span(name, class_="branch" + (" head" if head else ''),
+                              title="Branch head" if head else 'Branch')
+                filters.append(branch_filter.append(span))
+                
+                
+            for tagname in change.get_tag_contains():
+                span = tag.span(tagname, class_="tag", title="Tag")
+                filters.append(branch_filter.append(span))
+            
+        return filters
