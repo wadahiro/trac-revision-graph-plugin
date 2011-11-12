@@ -32,6 +32,11 @@ class RevisionGraphModule(Component):
     
     # ITemplateStreamFilter methods
     def filter_stream(self, req, method, filename, stream, data):
+        if filename == 'browser.html' and data['repos'] and data['stickyrev']:
+            filters = self._show_browser_labels(req, data['repos'], data['stickyrev'])
+            for filter in filters:
+               stream = stream | filter
+        
         if filename == 'revisionlog.html':
             mode = data['mode']
             revranges = data['revranges']
@@ -119,3 +124,22 @@ class RevisionGraphModule(Component):
                 filters.append(branch_filter.append(span))
             
         return filters
+    
+    def _show_browser_labels(self, req, repos, stickyrev):
+        add_stylesheet(req, 'revisiongraph/css/revisiongraph.css')
+        
+        div = tag.div(class_="trac-tags")
+        
+        change = repos.get_changeset(repos.normalize_rev(stickyrev))
+        for branch, head in change.get_branches():
+            span = tag.span(branch, class_="branch" + (" head" if head else ''),
+                          title="Branch head" if head else 'Branch')
+            div.append(span)
+            
+        for tagname in change.get_tag_contains():
+            span = tag.span(tagname, class_="tag", title="Tag")
+            div.append(span)
+            
+        filter = Transformer('//table[@id="dirlist"]').before(div)
+            
+        return [filter]
